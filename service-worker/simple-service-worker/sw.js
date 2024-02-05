@@ -1,11 +1,11 @@
 const addResourcesToCache = async (resources) => {
   const cache = await caches.open('v1');
-  await cache.addAll(resources);
+  cache.addAll(resources).catch(err => console.error(err, err.stack));
 };
 
 const putInCache = async (request, response) => {
   const cache = await caches.open('v1');
-  await cache.put(request, response);
+  cache.put(request, response).catch(err => console.error(err, err.stack));
 };
 
 const cacheFirst = async ({ request, preloadResponsePromise, fallbackUrl }) => {
@@ -14,15 +14,15 @@ const cacheFirst = async ({ request, preloadResponsePromise, fallbackUrl }) => {
   if (responseFromCache) {
     return responseFromCache;
   }
-
-  // Next try to use the preloaded response, if it's there
-  const preloadResponse = await preloadResponsePromise;
-  if (preloadResponse) {
-    console.info('using preload response', preloadResponse);
-    putInCache(request, preloadResponse.clone());
-    return preloadResponse;
-  }
-
+//// Next try to use the preloaded response, if it's there
+//const preloadResponse = await preloadResponsePromise;
+//console.log("prePreLoad, post await");
+//if (preloadResponse) {
+//  console.info('using preload response', preloadResponse);
+//  putInCache(request, preloadResponse.clone());
+//  return preloadResponse;
+//}
+//
   // Next try to get the resource from the network
   try {
     const responseFromNetwork = await fetch(request.clone());
@@ -58,8 +58,9 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    addResourcesToCache([
+  event.waitUntil(async () => {
+    const cache = await caches.open('v1');
+    cache.addAll([
       './',
       './index.html',
       './style.css',
@@ -70,10 +71,11 @@ self.addEventListener('install', (event) => {
       './gallery/myLittleVader.jpg',
       './gallery/snowTroopers.jpg',
     ])
-  );
+  });
 });
 
 self.addEventListener('fetch', (event) => {
+  console.log(event.request.url);
   event.respondWith(
     cacheFirst({
       request: event.request,
